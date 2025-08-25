@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <title>Calendario de Estudio - Personalizable</title>
+  <title>Calendario de Estudio - Personalizable (v4.0)</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <style>
     :root{
@@ -12,6 +12,10 @@
       --text: #f0f0f0;
       --muted: #cbd5e1;
       --shadow: 0 4px 25px rgba(0,0,0,0.4);
+      --accent1: #2563eb;
+      --accent2: #1d4ed8;
+      --danger: #ef4444;
+      --ok: #10b981;
     }
     *{ box-sizing:border-box }
     body {
@@ -29,14 +33,18 @@
       text-align: center;
       padding: 1rem 1rem 1.25rem;
       background: linear-gradient(90deg, #0f2027, #203a43, #2c5364);
-      font-size: 1.8rem;
+      font-size: 1.6rem;
       color: #fff;
       box-shadow: 0 2px 10px rgba(0,0,0,0.5);
     }
     .version { font-size: 0.8rem; color: #e2e8f0; opacity:.8 }
-    .calendar {
-      max-width: 1000px;
+
+    .container {
+      max-width: 1100px;
       margin: 1rem auto;
+      padding: 0 8px;
+    }
+    .card {
       background: var(--card);
       border-radius: 16px;
       overflow: hidden;
@@ -44,7 +52,8 @@
       border: 1px solid rgba(148,163,184,0.12);
       backdrop-filter: blur(6px);
     }
-    .calendar-header {
+
+    .toolbar {
       display: flex;
       gap:.5rem;
       justify-content: space-between;
@@ -54,8 +63,8 @@
       flex-wrap: wrap;
     }
     .left, .right { display:flex; gap:.5rem; align-items:center }
-    .calendar-header button {
-      background: linear-gradient(90deg, #2563eb, #1d4ed8);
+    .btn {
+      background: linear-gradient(90deg, var(--accent1), var(--accent2));
       border: none;
       color: #fff;
       padding: 0.5rem .9rem;
@@ -64,10 +73,13 @@
       margin: 2px;
       transition: transform 0.15s ease, filter .15s ease;
       box-shadow: 0 2px 10px rgba(37,99,235,.35);
+      font-size:.95rem;
     }
-    .calendar-header button:hover { transform: translateY(-1px); filter: brightness(1.05); }
-    #monthYear { font-size: 1.1rem; color: var(--muted) }
+    .btn:hover { transform: translateY(-1px); filter: brightness(1.05); }
+    .btn.ghost { background:#475569; box-shadow:none }
+    #monthYear, #monthYearExams { font-size: 1.05rem; color: var(--muted) }
 
+    /* ====== Calendarios (Estudio y Parciales) ====== */
     .days {
       display: grid;
       grid-template-columns: repeat(7, 1fr);
@@ -87,12 +99,12 @@
     }
     .day {
       background:
-        radial-gradient(400px 160px at 80% 0%, rgba(59,130,246,.1), transparent 60%),
+        radial-gradient(400px 160px at 80% 0%, rgba(59,130,246,.08), transparent 60%),
         linear-gradient(180deg, rgba(255,255,255,0.015), transparent 30%);
     }
     .day:hover { outline: 1px solid rgba(148,163,184,0.25) }
-
-    .study-label {
+    .study-label,
+    .exam-label{
       display: inline-block;
       padding: 2px 6px;
       border-radius: 6px;
@@ -117,113 +129,36 @@
       box-shadow: 0 8px 30px rgba(0,0,0,.4);
     }
 
-    /* Modal base */
-    .modal {
-      position: fixed;
-      inset: 0;
-      background-color: rgba(0,0,0,0.6);
-      display: none;
-      align-items: center;
-      justify-content: center;
-      z-index: 20;
-      padding: 1rem;
-    }
-    .modal-content {
-      background-color: #0f172a;
-      padding: 1rem;
-      border-radius: 14px;
-      width: 380px;
-      max-height: 92vh;
-      overflow-y: auto;
-      box-shadow: var(--shadow);
-      border: 1px solid rgba(148,163,184,0.18);
-    }
-    .modal-content h3 { margin: .25rem 0 1rem }
-    .modal-content label {
-      display: block;
-      margin-bottom: 0.35rem;
-      font-size:.95rem;
-      color:#e2e8f0;
-    }
-    .modal-content input, .modal-content textarea, .modal-content select {
+    /* ====== Agenda semanal (grilla) ====== */
+    .agenda-wrap{ display:none; }
+    .agenda-toolbar{ display:flex; gap:.5rem; align-items:center; padding:.6rem .85rem; background:var(--cardAlt); border-top:1px solid rgba(148,163,184,0.12) }
+    .agenda {
+      display: grid;
+      grid-template-columns: 80px repeat(7, 1fr);
       width: 100%;
-      margin-bottom: 1rem;
-      padding: 0.6rem .7rem;
-      border-radius: 8px;
-      border: 1px solid rgba(148,163,184,0.18);
-      background-color: #0b1220;
-      color: white;
-      outline: none;
-    }
-    .modal-content textarea{ resize: vertical }
-    .modal-content button {
-      background: linear-gradient(90deg, #2563eb, #1d4ed8);
-      border: none;
-      padding: 0.6rem .8rem;
-      color: white;
-      cursor: pointer;
-      border-radius: 10px;
-      width: 100%;
-      font-size: 1rem;
-      margin-bottom: 0.6rem;
-      box-shadow: 0 2px 12px rgba(37,99,235,.35);
-    }
-    .modal-content button.cancel { background: #475569; box-shadow:none }
-    .record-list {
-      margin-bottom: 1rem;
-      max-height: 220px;
-      overflow-y: auto;
-      border: 1px solid rgba(71,85,105,.7);
-      padding: 6px;
-      border-radius: 8px;
-      background: #0b1220;
-    }
-    .record-item {
-      background: #111827;
-      margin: 6px 0;
-      padding: 6px 8px 30px 8px;
-      border-radius: 8px;
+      max-height: 70vh;
+      overflow: auto;
       position: relative;
-      font-size: 0.9rem;
-      border: 1px solid rgba(148,163,184,0.12);
     }
-    .record-buttons {
-      position: absolute;
-      bottom: 6px;
-      right: 8px;
-      display: flex;
-      gap: 6px;
-    }
-    .record-buttons button{
-      width:auto;
-      padding:.35rem .6rem;
-      border-radius:8px;
-      font-size:.9rem;
-    }
+    .agenda .hour-cell{ position: relative; height: var(--hourHeight); border-bottom: 1px dashed rgba(148,163,184,0.18); padding-left: .5rem; color:#94a3b8; font-size:.85rem }
+    .agenda .day-col{ position: relative; border-left: 1px solid var(--border); }
+    .agenda .day-col-inner{ position: relative; height: calc(var(--minutesRange) * var(--pxPerMin)); }
+    .agenda .time-guideline{ position:absolute; left:0; right:0; height:1px; background: rgba(148,163,184,0.12); }
+    .class-block{ position:absolute; left:6px; right:6px; border-radius:10px; color:#fff; padding:6px 8px; font-size:.85rem; border:1px solid rgba(0,0,0,.25); box-shadow: 0 6px 18px rgba(0,0,0,.25); cursor:pointer }
+    .class-block .small{ font-size:.75rem; opacity:.95 }
 
-    /* Subjects manager */
-    .subject-row{
-      display:flex; align-items:center; gap:.6rem;
-      background:#0b1220; border:1px solid rgba(148,163,184,.15);
-      border-radius:10px; padding:.5rem .6rem; margin:.4rem 0;
-    }
-    .dot{
-      width:18px; height:18px; border-radius:50%; border:1px solid rgba(0,0,0,.25);
-      flex:0 0 auto;
-    }
-    .subject-name{ flex:1; }
-    .swatches{ display:grid; grid-template-columns: repeat(6, 1fr); gap:.4rem; margin:.4rem 0 .6rem }
-    .swatch{
-      height:28px; border-radius:8px; border:1px solid rgba(0,0,0,.25);
-      cursor:pointer; outline:2px solid transparent; outline-offset:2px;
-    }
-    .swatch.selected{ outline-color:#fff }
-    .row{ display:flex; gap:.5rem; align-items:center }
-    .row > *{ flex:1 }
+    /* ====== Modales base ====== */
+    .modal { position: fixed; inset: 0; background-color: rgba(0,0,0,0.6); display: none; align-items: center; justify-content: center; z-index: 40; padding: 1rem; }
+    .modal-content { background-color: #0f172a; padding: 1rem; border-radius: 14px; width: 380px; max-height: 92vh; overflow-y: auto; box-shadow: var(--shadow); border: 1px solid rgba(148,163,184,0.18); }
+    .modal-content h3 { margin: .25rem 0 1rem }
+    .modal-content label { display: block; margin-bottom: 0.35rem; font-size:.95rem; color:#e2e8f0; }
+    .modal-content input, .modal-content textarea, .modal-content select { width: 100%; margin-bottom: 1rem; padding: 0.6rem .7rem; border-radius: 8px; border: 1px solid rgba(148,163,184,0.18); background-color: #0b1220; color: white; outline: none; }
+    .modal-content textarea{ resize: vertical }
+    .modal-content button { background: linear-gradient(90deg, var(--accent1), var(--accent2)); border: none; padding: 0.6rem .8rem; color: white; cursor: pointer; border-radius: 10px; width: 100%; font-size: 1rem; margin-bottom: 0.6rem; box-shadow: 0 2px 12px rgba(37,99,235,.35); }
+    .modal-content button.cancel { background: #475569; box-shadow:none }
 
     @media (max-width: 768px) {
-      .calendar-header { flex-direction: column; align-items:flex-start }
-      .day, .day-name { min-height: 90px; font-size: 0.85rem; }
+      .toolbar { flex-direction: column; align-items:flex-start }
       .modal-content{ width:100% }
     }
   </style>
@@ -231,29 +166,63 @@
 <body>
   <header>
     📚 Calendario de Estudio - Personalizable
-    <div class="version">v3.0</div>
+    <div class="version">v4.0</div>
   </header>
 
-  <div class="calendar">
-    <div class="calendar-header">
-      <div class="left">
-        <button onclick="changeMonth(-1)">◀</button>
-        <span id="monthYear"></span>
-        <button onclick="changeMonth(1)">▶</button>
+  <div class="container">
+    <div class="card">
+      <div class="toolbar">
+        <div class="left">
+          <button class="btn" onclick="changeMonth(-1)»">◀</button>
+          <span id="monthYear"></span>
+          <button class="btn" onclick="changeMonth(1)">▶</button>
+        </div>
+        <div class="right">
+          <button class="btn" onclick="openWeeklySummary()">📊 Resumen semanal</button>
+          <button class="btn" onclick="openSubjectsModal()">🎨 Materias</button>
+          <button class="btn" onclick="showAgenda()">🗓️ Agenda</button>
+          <button class="btn" onclick="showExams()">📝 Parciales</button>
+          <button class="btn ghost" onclick="showStudy()">📒 Estudio</button>
+        </div>
       </div>
-      <div class="right">
-        <button onclick="openWeeklySummary()">📊 Resumen semanal</button>
-        <button onclick="openSubjectsModal()">🎨 Materias</button>
+
+      <!-- ===== Vista: Calendario Estudio ===== -->
+      <div id="studyView">
+        <div class="days" id="calendarDays"></div>
+      </div>
+
+      <!-- ===== Vista: Agenda semanal ===== -->
+      <div id="agendaView" class="agenda-wrap">
+        <div class="agenda-toolbar">
+          <strong style="color:#cbd5e1">Agenda semanal (08:00 – 23:00)</strong>
+          <span style="flex:1"></span>
+          <button class="btn" onclick="openAgendaModal()">➕ Añadir clase</button>
+        </div>
+        <div id="agendaGrid" class="agenda"></div>
+      </div>
+
+      <!-- ===== Vista: Calendario Parciales ===== -->
+      <div id="examsView" style="display:none">
+        <div class="toolbar" style="border-top:1px solid rgba(148,163,184,0.12)">
+          <div class="left">
+            <button class="btn" onclick="changeExamMonth(-1)">◀</button>
+            <span id="monthYearExams"></span>
+            <button class="btn" onclick="changeExamMonth(1)">▶</button>
+          </div>
+          <div class="right">
+            <button class="btn" onclick="openExamHelp()">❔ Cómo usar</button>
+          </div>
+        </div>
+        <div class="days" id="examCalendarDays"></div>
       </div>
     </div>
-    <div class="days" id="calendarDays"></div>
   </div>
 
-  <!-- Modal agregar/editar estudio -->
+  <!-- ===== Modal Estudio ===== -->
   <div id="modal" class="modal">
     <div class="modal-content">
       <h3 id="modalTitle">Agregar Estudio</h3>
-      <div id="recordList" class="record-list" style="display:none;"></div>
+      <div id="recordList" class="record-list" style="display:none; max-height:220px; overflow:auto; border:1px solid rgba(71,85,105,.7); padding:6px; border-radius:8px; background:#0b1220"></div>
 
       <label>Horas</label>
       <input type="number" id="studyHours" min="0" placeholder="Ej: 1" />
@@ -263,16 +232,14 @@
       <textarea id="studyTopic" rows="2" placeholder="Tema..."></textarea>
       <label>Materia(s)</label>
       <select id="subject" multiple size="6"></select>
-      <small style="display:block;margin-top:-.6rem;color:#93c5fd;margin-bottom:.8rem">
-        Sostené Ctrl/Cmd para seleccionar varias.
-      </small>
+      <small style="display:block;margin-top:-.6rem;color:#93c5fd;margin-bottom:.8rem">Sostené Ctrl/Cmd para seleccionar varias.</small>
 
       <button id="saveBtn" onclick="saveStudy()">Guardar</button>
       <button class="cancel" onclick="closeModal()">Cancelar</button>
     </div>
   </div>
 
-  <!-- Modal resumen semanal -->
+  <!-- ===== Modal resumen semanal ===== -->
   <div id="weeklyModal" class="modal">
     <div class="modal-content">
       <h3>Resumen semanal</h3>
@@ -281,7 +248,7 @@
     </div>
   </div>
 
-  <!-- Modal materias -->
+  <!-- ===== Modal Materias ===== -->
   <div id="subjectsModal" class="modal">
     <div class="modal-content">
       <h3 id="subjectsTitle">Gestionar Materias</h3>
@@ -290,14 +257,14 @@
 
       <hr style="border:none;border-top:1px solid rgba(148,163,184,.25);margin:.8rem 0">
 
-      <div class="row">
+      <div class="row" style="display:flex; gap:.5rem; align-items:center">
         <input type="text" id="subjectName" placeholder="Nombre de materia">
         <input type="color" id="customColor" value="#3b82f6" title="Color personalizado">
       </div>
 
-      <div class="swatches" id="swatches"></div>
+      <div class="swatches" id="swatches" style="display:grid; grid-template-columns: repeat(6, 1fr); gap:.4rem; margin:.4rem 0 .6rem"></div>
 
-      <div class="row">
+      <div class="row" style="display:flex; gap:.5rem; align-items:center">
         <button id="addUpdateBtn" onclick="handleAddOrUpdateSubject()">Agregar materia</button>
         <button class="cancel" onclick="resetSubjectsForm()">Limpiar</button>
       </div>
@@ -306,37 +273,106 @@
     </div>
   </div>
 
+  <!-- ===== Modal Agenda (añadir/editar clase) ===== -->
+  <div id="agendaModal" class="modal">
+    <div class="modal-content">
+      <h3 id="agendaModalTitle">Añadir clase</h3>
+      <label>Día</label>
+      <select id="agendaDay"></select>
+      <label>Materia</label>
+      <select id="agendaSubject"></select>
+      <label>Aula</label>
+      <input type="text" id="agendaRoom" placeholder="Ej: Aula 204 / Lab"/>
+      <div style="display:flex; gap:.5rem">
+        <div style="flex:1">
+          <label>Inicio</label>
+          <input type="time" id="agendaStart" min="08:00" max="23:00" step="60" />
+        </div>
+        <div style="flex:1">
+          <label>Fin</label>
+          <input type="time" id="agendaEnd" min="08:01" max="23:00" step="60" />
+        </div>
+      </div>
+      <button onclick="saveAgendaItem()">Guardar</button>
+      <button class="cancel" onclick="closeAgendaModal()">Cancelar</button>
+      <button id="deleteAgendaBtn" class="cancel" style="display:none; background:var(--danger)" onclick="deleteAgendaItem()">Eliminar</button>
+    </div>
+  </div>
+
+  <!-- ===== Modal Parciales (añadir/editar) ===== -->
+  <div id="examModal" class="modal">
+    <div class="modal-content">
+      <h3 id="examModalTitle">Nuevo parcial</h3>
+      <div id="examDateLabel" style="margin-bottom:.5rem; color:#cbd5e1"></div>
+      <label>Materia</label>
+      <select id="examSubject"></select>
+      <label>Tema / Unidad</label>
+      <input type="text" id="examTopic" placeholder="Ej: Integrales Múltiples" />
+      <label>Observaciones</label>
+      <textarea id="examNotes" rows="3" placeholder="Aula, modalidad, profesor, etc."></textarea>
+      <button onclick="saveExamItem()">Guardar</button>
+      <button class="cancel" onclick="closeExamModal()">Cancelar</button>
+      <button id="deleteExamBtn" class="cancel" style="display:none; background:var(--danger)" onclick="deleteExamItem()">Eliminar</button>
+    </div>
+  </div>
+
   <script>
-    /********** Estado **********/
+    /********** Config & Estado global **********/
     const COLOR_PALETTE = [
       "#3b82f6","#10b981","#f59e0b","#ef4444","#a855f7","#14b8a6",
       "#8b5cf6","#22c55e","#f97316","#eab308","#06b6d4","#ec4899"
     ];
     let subjects = JSON.parse(localStorage.getItem('subjects') || '[]');
-    let currentDate = new Date(2025, 7); // Agosto 2025 (mes 7 porque 0=enero)
+
+    // Estudio
+    let currentDate = new Date(2025, 7); // Agosto 2025 (0=enero)
     let selectedDate = null;
     let editingRecord = null;
 
-    // Estado del gestor de materias
-    let subjectsMode = 'add'; // 'add' | 'edit'
-    let editingSubjectIndex = -1;
-    let selectedSwatchColor = COLOR_PALETTE[0];
+    // Agenda (08:00 a 23:00)
+    const minutesStart = 8*60; // 08:00
+    const minutesEnd = 23*60; // 23:00
+    const minutesRange = minutesEnd - minutesStart; // 900
+    const pxPerMin = 1.2; // alto total ~1080px
+    document.documentElement.style.setProperty('--minutesRange', minutesRange);
+    document.documentElement.style.setProperty('--pxPerMin', pxPerMin + 'px');
+    document.documentElement.style.setProperty('--hourHeight', (60*pxPerMin) + 'px');
+
+    let agendaData = JSON.parse(localStorage.getItem('agendaData') || '{}');
+    const dayKeys = ['lunes','martes','miercoles','jueves','viernes','sabado','domingo'];
+    const dayLabels = ['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'];
+
+    // Parciales
+    let examDateKey = null; // YYYY-MM-DD actualmente abierto en modal
+    let examEditingIndex = null;
+    let currentExamDate = new Date(2025, 7); // mes independiente para Parciales
 
     /********** Utilidades **********/
-    function saveSubjects() {
-      localStorage.setItem('subjects', JSON.stringify(subjects));
+    function saveSubjects(){ localStorage.setItem('subjects', JSON.stringify(subjects)); }
+    function getSubjectColor(name){ const s = subjects.find(x => x.name === name); return s ? s.color : '#888'; }
+    function formatDateKey(d){ return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
+    function timeToMinutes(t){ const [h,m] = t.split(':').map(Number); return h*60+m; }
+    function clamp(val, min, max){ return Math.max(min, Math.min(max, val)); }
+
+    /********** ==== VISTA: ESTUDIO ==== **********/
+    function renderSubjectsSelect() {
+      const select = document.getElementById('subject');
+      select.innerHTML = '';
+      if (subjects.length === 0){
+        const opt = document.createElement('option');
+        opt.disabled = true; opt.selected = true;
+        opt.textContent = 'Primero crea materias en 🎨 Materias';
+        select.appendChild(opt);
+        return;
+      }
+      subjects.forEach(sub => {
+        const opt = document.createElement('option');
+        opt.value = sub.name;
+        opt.textContent = sub.name;
+        select.appendChild(opt);
+      });
     }
 
-    function formatDateKey(d){
-      return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-    }
-
-    function getSubjectColor(name){
-      const s = subjects.find(x => x.name === name);
-      return s ? s.color : '#888';
-    }
-
-    /********** Render del calendario **********/
     function renderCalendar() {
       const days = document.getElementById('calendarDays');
       const monthYear = document.getElementById('monthYear');
@@ -353,7 +389,6 @@
 
       const start = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
       const end = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
-      // Offset para que empiece en lunes
       const offset = (start.getDay() + 6) % 7;
 
       for (let i = 0; i < offset; i++) {
@@ -391,34 +426,10 @@
       }
     }
 
-    function changeMonth(diff) {
-      currentDate.setMonth(currentDate.getMonth() + diff);
-      renderCalendar();
-    }
-
-    /********** Modal de estudio **********/
-    function renderSubjectsSelect() {
-      const select = document.getElementById('subject');
-      select.innerHTML = '';
-      if (subjects.length === 0){
-        const opt = document.createElement('option');
-        opt.disabled = true; opt.selected = true;
-        opt.textContent = 'Primero crea materias en 🎨 Materias';
-        select.appendChild(opt);
-        return;
-      }
-      subjects.forEach(sub => {
-        const opt = document.createElement('option');
-        opt.value = sub.name;
-        opt.textContent = sub.name;
-        select.appendChild(opt);
-      });
-    }
+    function changeMonth(diff) { currentDate.setMonth(currentDate.getMonth() + diff); renderCalendar(); }
 
     function openModal(dateKey) {
-      selectedDate = dateKey;
-      editingRecord = null;
-
+      selectedDate = dateKey; editingRecord = null;
       document.getElementById('studyHours').value = '';
       document.getElementById('studyMinutes').value = '';
       document.getElementById('studyTopic').value = '';
@@ -436,18 +447,15 @@
             <div><strong>Materia:</strong> ${rec.materia}</div>
             <div><strong>Tiempo:</strong> ${rec.horas}:${String(rec.minutos).padStart(2,'0')}</div>
             <div><strong>Tema:</strong> ${rec.tema}</div>
-            <div class="record-buttons">
-              <button onclick="editRecord(${i})">✏ Editar</button>
-              <button onclick="deleteRecord(${i})">❌ Borrar</button>
-            </div>
-          `;
+            <div style="display:flex; gap:.5rem; justify-content:flex-end; margin-top:.4rem">
+              <button class="btn" style="padding:.35rem .6rem" onclick="editRecord(${i})">✏ Editar</button>
+              <button class="btn" style="padding:.35rem .6rem; background:var(--danger)" onclick="deleteRecord(${i})">❌ Borrar</button>
+            </div>`;
           list.appendChild(div);
         });
       } else list.style.display = 'none';
-
       document.getElementById('modal').style.display = 'flex';
     }
-
     function closeModal() { document.getElementById('modal').style.display = 'none'; }
 
     function saveStudy() {
@@ -455,200 +463,370 @@
       const minutos = parseInt(document.getElementById('studyMinutes').value) || 0;
       const tema = document.getElementById('studyTopic').value.trim();
       const materias = Array.from(document.getElementById('subject').selectedOptions).map(o => o.value);
-
-      if ((horas === 0 && minutos === 0) || !tema || materias.length === 0) {
-        alert('Completá horas/minutos, tema y al menos una materia.');
-        return;
-      }
+      if ((horas === 0 && minutos === 0) || !tema || materias.length === 0) { alert('Completá horas/minutos, tema y al menos una materia.'); return; }
       let records = JSON.parse(localStorage.getItem(selectedDate) || '[]');
-
       if (editingRecord !== null) {
-        // Editar un registro existente (una sola materia)
         records[editingRecord] = { horas, minutos, tema, materia: materias[0] };
-      } else {
-        // Agregar uno por cada materia seleccionada (como el original)
-        materias.forEach(materia => records.push({ horas, minutos, tema, materia }));
-      }
+      } else { materias.forEach(materia => records.push({ horas, minutos, tema, materia })); }
       localStorage.setItem(selectedDate, JSON.stringify(records));
-      closeModal();
-      renderCalendar();
+      closeModal(); renderCalendar();
     }
-
     function editRecord(i) {
       const records = JSON.parse(localStorage.getItem(selectedDate) || '[]');
       const rec = records[i];
       document.getElementById('studyHours').value = rec.horas;
       document.getElementById('studyMinutes').value = rec.minutos;
       document.getElementById('studyTopic').value = rec.tema;
-
       renderSubjectsSelect();
       const select = document.getElementById('subject');
       for (let opt of select.options) opt.selected = (opt.value === rec.materia);
-
       editingRecord = i;
     }
-
     function deleteRecord(i) {
       let records = JSON.parse(localStorage.getItem(selectedDate) || '[]');
       records.splice(i, 1);
       localStorage.setItem(selectedDate, JSON.stringify(records));
-      openModal(selectedDate);
-      renderCalendar();
+      openModal(selectedDate); renderCalendar();
     }
 
-    /********** Resumen semanal **********/
     function openWeeklySummary() {
-      const start = new Date(2025, 7, 4); // 4 de agosto de 2025 (como tu versión)
+      const start = new Date(2025, 7, 4);
       const today = new Date();
-      let week = 1;
-      let html = '';
-      let cur = new Date(start);
-
+      let week = 1; let html = ''; let cur = new Date(start);
       while (cur <= today) {
-        let weekEnd = new Date(cur);
-        weekEnd.setDate(weekEnd.getDate() + 6);
-
+        let weekEnd = new Date(cur); weekEnd.setDate(weekEnd.getDate() + 6);
         let totalMin = 0;
         for (let d = new Date(cur); d <= weekEnd && d <= today; d.setDate(d.getDate() + 1)) {
           const key = formatDateKey(d);
           const records = JSON.parse(localStorage.getItem(key) || '[]');
           records.forEach(r => totalMin += r.horas*60 + r.minutos);
         }
-        let hh = Math.floor(totalMin / 60);
-        let mm = totalMin % 60;
+        let hh = Math.floor(totalMin / 60); let mm = totalMin % 60;
         html += `<div>Semana ${week}: ${String(hh).padStart(2,'0')}:${String(mm).padStart(2,'0')} hrs</div>`;
-        week++;
-        cur.setDate(cur.getDate() + 7);
+        week++; cur.setDate(cur.getDate() + 7);
       }
       document.getElementById('weeklyList').innerHTML = html || '<em>Sin datos</em>';
       document.getElementById('weeklyModal').style.display = 'flex';
     }
     function closeWeeklyModal() { document.getElementById('weeklyModal').style.display = 'none'; }
 
-    /********** Gestor de materias **********/
+    /********** ==== VISTA: AGENDA ==== **********/
+    function ensureAgendaStructure(){
+      if (!agendaData || typeof agendaData !== 'object') agendaData = {};
+      dayKeys.forEach(k => { if (!Array.isArray(agendaData[k])) agendaData[k] = []; });
+    }
+
+    function renderAgenda() {
+      ensureAgendaStructure();
+      const grid = document.getElementById('agendaGrid');
+      grid.innerHTML = '';
+      grid.style.setProperty('--pxPerMin', pxPerMin + 'px');
+
+      // Columna de horas
+      const hoursCol = document.createElement('div');
+      hoursCol.style.display = 'flex';
+      hoursCol.style.flexDirection = 'column';
+      for (let m = minutesStart; m <= minutesEnd; m += 60){
+        const cell = document.createElement('div');
+        cell.className = 'hour-cell';
+        const h = String(Math.floor(m/60)).padStart(2,'0');
+        cell.textContent = `${h}:00`;
+        hoursCol.appendChild(cell);
+      }
+      grid.appendChild(hoursCol);
+
+      // 7 columnas de días
+      dayKeys.forEach((key, idx) => {
+        const col = document.createElement('div');
+        col.className = 'day-col';
+
+        // Header día
+        const header = document.createElement('div');
+        header.className = 'day-name';
+        header.style.position='sticky'; header.style.top='0'; header.style.zIndex='2';
+        header.textContent = dayLabels[idx];
+        col.appendChild(header);
+
+        // Contenedor vertical
+        const inner = document.createElement('div');
+        inner.className = 'day-col-inner';
+        inner.style.height = (minutesRange*pxPerMin) + 'px';
+        inner.onclick = (e)=> { openAgendaModal(key); e.stopPropagation(); };
+
+        // Líneas de hora
+        for (let m = minutesStart; m <= minutesEnd; m += 60){
+          const y = (m - minutesStart) * pxPerMin;
+          const line = document.createElement('div');
+          line.className = 'time-guideline';
+          line.style.top = y + 'px';
+          inner.appendChild(line);
+        }
+
+        // Bloques
+        agendaData[key].forEach((item, i) => {
+          const startM = clamp(timeToMinutes(item.inicio), minutesStart, minutesEnd);
+          const endM = clamp(timeToMinutes(item.fin), minutesStart, minutesEnd);
+          if (endM <= startM) return; // ignorar inválidos
+          const top = (startM - minutesStart) * pxPerMin;
+          const height = (endM - startM) * pxPerMin;
+
+          const block = document.createElement('div');
+          block.className = 'class-block';
+          block.style.top = top + 'px';
+          block.style.height = height + 'px';
+          block.style.background = getSubjectColor(item.materia);
+          block.style.opacity = .95;
+          block.innerHTML = `<strong>${item.materia}</strong><div class="small">${item.aula ? item.aula + ' • ' : ''}${item.inicio}–${item.fin}</div>`;
+          block.onclick = (e) => { e.stopPropagation(); openAgendaModal(key, i); };
+          inner.appendChild(block);
+        });
+
+        col.appendChild(inner);
+        grid.appendChild(col);
+      });
+    }
+
+    let agendaEditDay = null; let agendaEditIndex = null;
+    function openAgendaModal(dayKey=null, idx=null){
+      ensureAgendaStructure();
+      agendaEditDay = dayKey; agendaEditIndex = idx;
+      const daySel = document.getElementById('agendaDay');
+      daySel.innerHTML = '';
+      dayKeys.forEach((k,i)=>{
+        const opt = document.createElement('option'); opt.value=k; opt.textContent=dayLabels[i]; daySel.appendChild(opt);
+      });
+      if (dayKey) daySel.value = dayKey;
+
+      // Materias
+      const subSel = document.getElementById('agendaSubject');
+      subSel.innerHTML = '';
+      subjects.forEach(s=>{ const o=document.createElement('option'); o.value=s.name; o.textContent=s.name; subSel.appendChild(o); });
+
+      document.getElementById('agendaRoom').value = '';
+      document.getElementById('agendaStart').value = '';
+      document.getElementById('agendaEnd').value = '';
+      document.getElementById('deleteAgendaBtn').style.display = 'none';
+      document.getElementById('agendaModalTitle').textContent = idx===null? 'Añadir clase' : 'Editar clase';
+
+      if (idx !== null && dayKey){
+        const it = agendaData[dayKey][idx];
+        if (it){
+          subSel.value = it.materia;
+          document.getElementById('agendaRoom').value = it.aula || '';
+          document.getElementById('agendaStart').value = it.inicio;
+          document.getElementById('agendaEnd').value = it.fin;
+          document.getElementById('deleteAgendaBtn').style.display = 'block';
+        }
+      }
+      document.getElementById('agendaModal').style.display = 'flex';
+    }
+    function closeAgendaModal(){ document.getElementById('agendaModal').style.display = 'none'; }
+
+    function saveAgendaItem(){
+      ensureAgendaStructure();
+      const day = document.getElementById('agendaDay').value;
+      const materia = document.getElementById('agendaSubject').value;
+      const aula = document.getElementById('agendaRoom').value.trim();
+      const inicio = document.getElementById('agendaStart').value;
+      const fin = document.getElementById('agendaEnd').value;
+      if (!day || !materia || !inicio || !fin){ alert('Completá día, materia, inicio y fin.'); return; }
+      const startM = timeToMinutes(inicio), endM = timeToMinutes(fin);
+      if (startM < minutesStart || endM > minutesEnd || endM <= startM){ alert('Rango permitido: 08:00–23:00 y fin > inicio.'); return; }
+      const item = { materia, aula, inicio, fin };
+      if (agendaEditIndex===null || agendaEditIndex===undefined){ agendaData[day].push(item); }
+      else { agendaData[day][agendaEditIndex] = item; }
+      localStorage.setItem('agendaData', JSON.stringify(agendaData));
+      closeAgendaModal(); renderAgenda();
+    }
+    function deleteAgendaItem(){
+      if (agendaEditDay===null || agendaEditIndex===null) return;
+      agendaData[agendaEditDay].splice(agendaEditIndex,1);
+      localStorage.setItem('agendaData', JSON.stringify(agendaData));
+      closeAgendaModal(); renderAgenda();
+    }
+
+    /********** ==== VISTA: PARCIALES ==== **********/
+    function renderExamSubjects(){
+      const sel = document.getElementById('examSubject');
+      sel.innerHTML='';
+      subjects.forEach(s=>{ const o=document.createElement('option'); o.value=s.name; o.textContent=s.name; sel.appendChild(o); });
+    }
+
+    function renderExamCalendar(){
+      const days = document.getElementById('examCalendarDays');
+      const monthYear = document.getElementById('monthYearExams');
+      days.innerHTML = '';
+      monthYear.textContent = currentExamDate.toLocaleDateString('es-AR', { month: 'long', year: 'numeric' });
+
+      const dayNames = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
+      dayNames.forEach(d => { const dn=document.createElement('div'); dn.className='day-name'; dn.textContent=d; days.appendChild(dn); });
+
+      const start = new Date(currentExamDate.getFullYear(), currentExamDate.getMonth(), 1);
+      const end = new Date(currentExamDate.getFullYear(), currentExamDate.getMonth() + 1, 0);
+      const offset = (start.getDay() + 6) % 7;
+      for (let i=0;i<offset;i++){ const empty=document.createElement('div'); empty.className='day'; days.appendChild(empty); }
+
+      for (let d=1; d<=end.getDate(); d++){
+        const day = document.createElement('div'); day.className='day'; day.textContent=d;
+        const dateKey = `${currentExamDate.getFullYear()}-${String(currentExamDate.getMonth()+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+        const items = JSON.parse(localStorage.getItem('exams:'+dateKey) || '[]');
+        items.forEach(it=>{
+          const label = document.createElement('div'); label.className='exam-label'; label.style.backgroundColor = getSubjectColor(it.materia);
+          label.textContent = it.materia;
+          const tooltip = document.createElement('div'); tooltip.className='tooltip';
+          tooltip.textContent = `📆 ${dateKey}\n📚 ${it.materia}${it.tema?`\n🧩 ${it.tema}`:''}${it.obs?`\n📝 ${it.obs}`:''}`;
+          label.appendChild(tooltip); label.onmouseenter=()=>tooltip.style.display='block'; label.onmouseleave=()=>tooltip.style.display='none';
+          day.appendChild(label);
+        });
+        day.onclick = () => openExamModal(dateKey);
+        days.appendChild(day);
+      }
+    }
+
+    function changeExamMonth(diff){ currentExamDate.setMonth(currentExamDate.getMonth()+diff); renderExamCalendar(); }
+
+    function openExamModal(dateKey){
+      examDateKey = dateKey; examEditingIndex = null;
+      document.getElementById('examModalTitle').textContent = 'Nuevo parcial';
+      document.getElementById('deleteExamBtn').style.display = 'none';
+      document.getElementById('examDateLabel').textContent = 'Fecha: '+dateKey;
+      renderExamSubjects();
+      document.getElementById('examTopic').value = '';
+      document.getElementById('examNotes').value = '';
+      document.getElementById('examModal').style.display = 'flex';
+    }
+    function closeExamModal(){ document.getElementById('examModal').style.display = 'none'; }
+
+    function saveExamItem(){
+      if (!examDateKey) return;
+      const materia = document.getElementById('examSubject').value;
+      const tema = document.getElementById('examTopic').value.trim();
+      const obs = document.getElementById('examNotes').value.trim();
+      const key = 'exams:'+examDateKey;
+      let items = JSON.parse(localStorage.getItem(key) || '[]');
+      const item = { materia, tema, obs };
+      if (examEditingIndex===null) items.push(item); else items[examEditingIndex]=item;
+      localStorage.setItem(key, JSON.stringify(items));
+      closeExamModal(); renderExamCalendar();
+    }
+    function deleteExamItem(){
+      if (examDateKey===null || examEditingIndex===null) return;
+      const key = 'exams:'+examDateKey;
+      let items = JSON.parse(localStorage.getItem(key) || '[]');
+      items.splice(examEditingIndex,1);
+      localStorage.setItem(key, JSON.stringify(items));
+      closeExamModal(); renderExamCalendar();
+    }
+
+    // (Opcional) Ayuda
+    function openExamHelp(){ alert('Calendario de Parciales: hacé click en un día para registrar materia, tema y observaciones. Se guarda por fecha y no afecta el calendario de estudio.'); }
+
+    /********** ==== Materias (gestor) ==== **********/
+    let subjectsMode = 'add';
+    let editingSubjectIndex = -1;
+    let selectedSwatchColor = COLOR_PALETTE[0];
+
     function renderSubjectsList() {
       const list = document.getElementById('subjectsList');
       list.innerHTML = '';
-      if (subjects.length === 0){
-        list.innerHTML = '<em>No hay materias creadas aún.</em>';
-        return;
-      }
+      if (subjects.length === 0){ list.innerHTML = '<em>No hay materias creadas aún.</em>'; return; }
       subjects.forEach((sub, i) => {
         const row = document.createElement('div');
         row.className = 'subject-row';
+        row.style.display='flex'; row.style.alignItems='center'; row.style.gap='.6rem';
+        row.style.background='#0b1220'; row.style.border='1px solid rgba(148,163,184,.15)'; row.style.borderRadius='10px'; row.style.padding='.5rem .6rem'; row.style.margin='.4rem 0';
         row.innerHTML = `
-          <div class="dot" style="background:${sub.color}"></div>
-          <div class="subject-name">${sub.name}</div>
-          <button onclick="startEditSubject(${i})">✏ Editar</button>
-          <button onclick="deleteSubject(${i})">❌ Borrar</button>
+          <div class="dot" style="background:${sub.color}; width:18px; height:18px; border-radius:50%; border:1px solid rgba(0,0,0,.25);"></div>
+          <div class="subject-name" style="flex:1">${sub.name}</div>
+          <button class="btn" style="padding:.3rem .6rem" onclick="startEditSubject(${i})">✏ Editar</button>
+          <button class="btn" style="padding:.3rem .6rem; background:var(--danger)" onclick="deleteSubject(${i})">❌ Borrar</button>
         `;
         list.appendChild(row);
       });
     }
-
     function renderSwatches(){
-      const cont = document.getElementById('swatches');
-      cont.innerHTML = '';
+      const cont = document.getElementById('swatches'); cont.innerHTML='';
       COLOR_PALETTE.forEach(col => {
         const d = document.createElement('div');
         d.className = 'swatch';
-        d.style.background = col;
-        if (col === selectedSwatchColor) d.classList.add('selected');
-        d.onclick = () => {
-          selectedSwatchColor = col;
-          document.getElementById('customColor').value = col;
-          renderSwatches();
-        };
+        d.style.height='28px'; d.style.borderRadius='8px'; d.style.border='1px solid rgba(0,0,0,.25)'; d.style.cursor='pointer'; d.style.outline='2px solid '+(col===selectedSwatchColor?'#fff':'transparent'); d.style.outlineOffset='2px';
+        d.style.background = col; d.onclick = () => { selectedSwatchColor = col; document.getElementById('customColor').value = col; renderSwatches(); };
         cont.appendChild(d);
       });
     }
-
     function openSubjectsModal() {
-      subjectsMode = 'add';
-      editingSubjectIndex = -1;
+      subjectsMode = 'add'; editingSubjectIndex = -1;
       document.getElementById('subjectsTitle').textContent = 'Gestionar Materias';
       document.getElementById('addUpdateBtn').textContent = 'Agregar materia';
-      resetSubjectsForm(false);
-      renderSubjectsList();
-      renderSwatches();
+      resetSubjectsForm(false); renderSubjectsList(); renderSwatches();
       document.getElementById('subjectsModal').style.display = 'flex';
     }
     function closeSubjectsModal() { document.getElementById('subjectsModal').style.display = 'none'; }
-
     function resetSubjectsForm(resetPalette = true){
       document.getElementById('subjectName').value = '';
       const custom = document.getElementById('customColor');
-      if (resetPalette){
-        selectedSwatchColor = COLOR_PALETTE[0];
-        custom.value = selectedSwatchColor;
-        renderSwatches();
-      } else {
-        // Mantener color actual
-      }
+      if (resetPalette){ selectedSwatchColor = COLOR_PALETTE[0]; custom.value = selectedSwatchColor; renderSwatches(); }
     }
-
     function handleAddOrUpdateSubject(){
       const name = document.getElementById('subjectName').value.trim();
       const color = document.getElementById('customColor').value || selectedSwatchColor;
       if (!name){ alert('Ingresá un nombre de materia.'); return; }
-
       if (subjectsMode === 'add'){
-        // Evitar duplicados por nombre
-        if (subjects.some(s => s.name.toLowerCase() === name.toLowerCase())){
-          alert('Ya existe una materia con ese nombre.');
-          return;
-        }
+        if (subjects.some(s => s.name.toLowerCase() === name.toLowerCase())){ alert('Ya existe una materia con ese nombre.'); return; }
         subjects.push({ name, color });
       } else if (subjectsMode === 'edit' && editingSubjectIndex >= 0){
         subjects[editingSubjectIndex] = { name, color };
       }
-      saveSubjects();
-      renderSubjectsList();
-      renderSubjectsSelect();
-      resetSubjectsForm();
-      subjectsMode = 'add';
-      editingSubjectIndex = -1;
-      document.getElementById('subjectsTitle').textContent = 'Gestionar Materias';
-      document.getElementById('addUpdateBtn').textContent = 'Agregar materia';
+      saveSubjects(); renderSubjectsList(); renderSubjectsSelect(); resetSubjectsForm();
+      subjectsMode = 'add'; editingSubjectIndex = -1; document.getElementById('subjectsTitle').textContent = 'Gestionar Materias'; document.getElementById('addUpdateBtn').textContent = 'Agregar materia';
+      renderAgenda(); renderExamCalendar(); renderCalendar();
     }
-
     function startEditSubject(i){
-      subjectsMode = 'edit';
-      editingSubjectIndex = i;
-      const sub = subjects[i];
+      subjectsMode = 'edit'; editingSubjectIndex = i; const sub = subjects[i];
       document.getElementById('subjectsTitle').textContent = 'Editar Materia';
       document.getElementById('addUpdateBtn').textContent = 'Guardar cambios';
-      document.getElementById('subjectName').value = sub.name;
-      document.getElementById('customColor').value = sub.color;
-      selectedSwatchColor = sub.color;
-      renderSwatches();
+      document.getElementById('subjectName').value = sub.name; document.getElementById('customColor').value = sub.color; selectedSwatchColor = sub.color; renderSwatches();
     }
-
     function deleteSubject(i) {
       if (!confirm('¿Eliminar esta materia? Los registros existentes no se borrarán.')) return;
-      subjects.splice(i,1);
-      saveSubjects();
-      renderSubjectsList();
-      renderSubjectsSelect();
-      renderCalendar(); // para que etiquetas futuras muestren gris si ya no existe la materia
+      const removed = subjects[i].name;
+      subjects.splice(i,1); saveSubjects(); renderSubjectsList(); renderSubjectsSelect();
+      // No borramos datos previos, solo cambiará a gris en etiquetas antiguas
+      renderAgenda(); renderExamCalendar(); renderCalendar();
+      // (Opcional) Advertir si en agenda había bloques con esa materia
+      const used = dayKeys.some(k => (agendaData[k]||[]).some(it=>it.materia===removed));
+      if (used) console.warn('La materia eliminada estaba en la agenda. Los bloques conservarán el nombre pero pueden verse grises.');
     }
 
-    /********** Inicio **********/
-    // Cerrar modales al inicio
-    document.getElementById('modal').style.display = 'none';
-    document.getElementById('weeklyModal').style.display = 'none';
-    document.getElementById('subjectsModal').style.display = 'none';
+    /********** ==== Switch de vistas ==== **********/
+    function showStudy(){
+      document.getElementById('studyView').style.display = 'block';
+      document.getElementById('agendaView').style.display = 'none';
+      document.getElementById('examsView').style.display = 'none';
+    }
+    function showAgenda(){
+      document.getElementById('studyView').style.display = 'none';
+      document.getElementById('agendaView').style.display = 'block';
+      document.getElementById('examsView').style.display = 'none';
+      renderAgenda();
+    }
+    function showExams(){
+      document.getElementById('studyView').style.display = 'none';
+      document.getElementById('agendaView').style.display = 'none';
+      document.getElementById('examsView').style.display = 'block';
+      renderExamCalendar();
+    }
 
-    // Sincronizar paleta con input color
-    document.getElementById('customColor').addEventListener('input', (e) => {
-      selectedSwatchColor = e.target.value;
-      renderSwatches();
-    });
+    /********** ==== Inicio ==== **********/
+    // Cierre de modales al inicio
+    ['modal','weeklyModal','subjectsModal','agendaModal','examModal'].forEach(id=>{ document.getElementById(id).style.display = 'none'; });
 
-    renderSubjectsSelect();
-    renderCalendar();
+    // Paleta sincronizada con input color
+    document.getElementById('customColor').addEventListener('input', (e) => { selectedSwatchColor = e.target.value; renderSwatches(); });
+
+    // Render inicial
+    renderSubjectsSelect(); renderCalendar(); renderAgenda(); renderExamCalendar();
   </script>
 </body>
 </html>
 
- 
