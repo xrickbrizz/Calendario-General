@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <title>Calendario de Estudio - Personalizable (v4.0)</title>
+  <title>Calendario de Estudio - Personalizable (v4.1)</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <style>
     :root{
@@ -18,17 +18,37 @@
       --ok: #10b981;
     }
     *{ box-sizing:border-box }
+
+    /* ====== Temas por vista (gradientes) ====== */
     body {
       margin: 0;
       font-family: 'Segoe UI', system-ui, -apple-system, Roboto, Arial, sans-serif;
       color: var(--text);
+      min-height: 100vh;
+      transition: background 300ms ease;
+    }
+    body.study-theme{
       background:
         radial-gradient(1200px 500px at 10% 10%, #172554 20%, transparent 60%),
         radial-gradient(900px 400px at 90% 0%, #155e75 10%, transparent 60%),
         radial-gradient(1000px 600px at 30% 80%, #5b21b6 10%, transparent 60%),
         linear-gradient(135deg, #0b1220 0%, #0f172a 100%);
-      min-height: 100vh;
     }
+    body.agenda-theme{
+      background:
+        radial-gradient(1200px 500px at 10% 10%, #064e3b 15%, transparent 60%),
+        radial-gradient(900px 400px at 90% 0%, #0d9488 10%, transparent 60%),
+        radial-gradient(1000px 600px at 30% 80%, #0b5e55 10%, transparent 60%),
+        linear-gradient(135deg, #082017 0%, #0b2a20 100%);
+    }
+    body.exams-theme{
+      background:
+        radial-gradient(1200px 500px at 10% 10%, #7f1d1d 15%, transparent 60%),
+        radial-gradient(900px 400px at 90% 0%, #b45309 10%, transparent 60%),
+        radial-gradient(1000px 600px at 30% 80%, #933333 10%, transparent 60%),
+        linear-gradient(135deg, #1a0b0b 0%, #2a0f0f 100%);
+    }
+
     header {
       text-align: center;
       padding: 1rem 1rem 1.25rem;
@@ -77,7 +97,7 @@
     }
     .btn:hover { transform: translateY(-1px); filter: brightness(1.05); }
     .btn.ghost { background:#475569; box-shadow:none }
-    #monthYear, #monthYearExams { font-size: 1.05rem; color: var(--muted) }
+    #monthYear { font-size: 1.05rem; color: var(--muted) }
 
     /* ====== Calendarios (Estudio y Parciales) ====== */
     .days {
@@ -114,6 +134,9 @@
       cursor: default;
       position: relative;
     }
+    /* Parciales ligeramente más grandes */
+    .exam-label{ font-size: .85rem; padding: 3px 8px; box-shadow: 0 2px 10px rgba(0,0,0,.25); }
+
     .tooltip {
       position: absolute;
       background-color: rgba(0,0,0,0.85);
@@ -157,23 +180,28 @@
     .modal-content button { background: linear-gradient(90deg, var(--accent1), var(--accent2)); border: none; padding: 0.6rem .8rem; color: white; cursor: pointer; border-radius: 10px; width: 100%; font-size: 1rem; margin-bottom: 0.6rem; box-shadow: 0 2px 12px rgba(37,99,235,.35); }
     .modal-content button.cancel { background: #475569; box-shadow:none }
 
+    /* Modal Parciales un poco más grande */
+    #examModal .modal-content { width: 420px; }
+
     @media (max-width: 768px) {
       .toolbar { flex-direction: column; align-items:flex-start }
       .modal-content{ width:100% }
+      #examModal .modal-content{ width:100% }
     }
   </style>
 </head>
-<body>
+<body class="study-theme">
   <header>
     📚 Calendario de Estudio - Personalizable
-    <div class="version">v4.0</div>
+    <div class="version">v4.1</div>
   </header>
 
   <div class="container">
     <div class="card">
       <div class="toolbar">
         <div class="left">
-          <button class="btn" onclick="changeMonth(-1)»">◀</button>
+          <!-- FIX: botón prev sin carácter extraño -->
+          <button class="btn" onclick="changeMonth(-1)">◀</button>
           <span id="monthYear"></span>
           <button class="btn" onclick="changeMonth(1)">▶</button>
         </div>
@@ -201,18 +229,8 @@
         <div id="agendaGrid" class="agenda"></div>
       </div>
 
-      <!-- ===== Vista: Calendario Parciales ===== -->
+      <!-- ===== Vista: Calendario Parciales (sin toolbar propia, usa la general) ===== -->
       <div id="examsView" style="display:none">
-        <div class="toolbar" style="border-top:1px solid rgba(148,163,184,0.12)">
-          <div class="left">
-            <button class="btn" onclick="changeExamMonth(-1)">◀</button>
-            <span id="monthYearExams"></span>
-            <button class="btn" onclick="changeExamMonth(1)">▶</button>
-          </div>
-          <div class="right">
-            <button class="btn" onclick="openExamHelp()">❔ Cómo usar</button>
-          </div>
-        </div>
         <div class="days" id="examCalendarDays"></div>
       </div>
     </div>
@@ -324,7 +342,7 @@
     ];
     let subjects = JSON.parse(localStorage.getItem('subjects') || '[]');
 
-    // Estudio
+    // Estudio y Parciales comparten el mismo mes
     let currentDate = new Date(2025, 7); // Agosto 2025 (0=enero)
     let selectedDate = null;
     let editingRecord = null;
@@ -345,7 +363,6 @@
     // Parciales
     let examDateKey = null; // YYYY-MM-DD actualmente abierto en modal
     let examEditingIndex = null;
-    let currentExamDate = new Date(2025, 7); // mes independiente para Parciales
 
     /********** Utilidades **********/
     function saveSubjects(){ localStorage.setItem('subjects', JSON.stringify(subjects)); }
@@ -353,6 +370,13 @@
     function formatDateKey(d){ return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
     function timeToMinutes(t){ const [h,m] = t.split(':').map(Number); return h*60+m; }
     function clamp(val, min, max){ return Math.max(min, Math.min(max, val)); }
+
+    function setTheme(theme){
+      document.body.classList.remove('study-theme','agenda-theme','exams-theme');
+      if (theme==='agenda') document.body.classList.add('agenda-theme');
+      else if (theme==='exams') document.body.classList.add('exams-theme');
+      else document.body.classList.add('study-theme');
+    }
 
     /********** ==== VISTA: ESTUDIO ==== **********/
     function renderSubjectsSelect() {
@@ -421,12 +445,34 @@
           day.appendChild(label);
         });
 
+        // Etiquetas de parciales en el mismo mes/fecha
+        const examItems = JSON.parse(localStorage.getItem('exams:'+dateKey) || '[]');
+        examItems.forEach(it=>{
+          const label = document.createElement('div');
+          label.className = 'exam-label';
+          label.style.backgroundColor = getSubjectColor(it.materia);
+          label.textContent = it.materia;
+          const tooltip = document.createElement('div');
+          tooltip.className = 'tooltip';
+          tooltip.textContent = `📆 ${dateKey}\n📚 ${it.materia}${it.tema?`\n🧩 ${it.tema}`:''}${it.obs?`\n📝 ${it.obs}`:''}`;
+          label.appendChild(tooltip);
+          label.onmouseenter=()=>tooltip.style.display='block';
+          label.onmouseleave=()=>tooltip.style.display='none';
+          day.appendChild(label);
+        });
+
         day.onclick = () => openModal(dateKey);
         days.appendChild(day);
       }
     }
 
-    function changeMonth(diff) { currentDate.setMonth(currentDate.getMonth() + diff); renderCalendar(); }
+    function changeMonth(diff) {
+      // Avanza o retrocede sin bloquear
+      currentDate.setMonth(currentDate.getMonth() + diff);
+      renderCalendar();
+      // Mantener sincronizado el calendario de parciales
+      renderExamCalendar();
+    }
 
     function openModal(dateKey) {
       selectedDate = dateKey; editingRecord = null;
@@ -443,6 +489,10 @@
         records.forEach((rec, i) => {
           const div = document.createElement('div');
           div.className = 'record-item';
+          div.style.border='1px solid rgba(148,163,184,.15)';
+          div.style.borderRadius='8px';
+          div.style.padding='.5rem';
+          div.style.margin='.4rem 0';
           div.innerHTML = `
             <div><strong>Materia:</strong> ${rec.materia}</div>
             <div><strong>Tiempo:</strong> ${rec.horas}:${String(rec.minutos).padStart(2,'0')}</div>
@@ -645,7 +695,7 @@
       closeAgendaModal(); renderAgenda();
     }
 
-    /********** ==== VISTA: PARCIALES ==== **********/
+    /********** ==== VISTA: PARCIALES (comparten fecha con estudio) ==== **********/
     function renderExamSubjects(){
       const sel = document.getElementById('examSubject');
       sel.innerHTML='';
@@ -654,21 +704,19 @@
 
     function renderExamCalendar(){
       const days = document.getElementById('examCalendarDays');
-      const monthYear = document.getElementById('monthYearExams');
       days.innerHTML = '';
-      monthYear.textContent = currentExamDate.toLocaleDateString('es-AR', { month: 'long', year: 'numeric' });
 
       const dayNames = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
       dayNames.forEach(d => { const dn=document.createElement('div'); dn.className='day-name'; dn.textContent=d; days.appendChild(dn); });
 
-      const start = new Date(currentExamDate.getFullYear(), currentExamDate.getMonth(), 1);
-      const end = new Date(currentExamDate.getFullYear(), currentExamDate.getMonth() + 1, 0);
+      const start = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+      const end = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
       const offset = (start.getDay() + 6) % 7;
       for (let i=0;i<offset;i++){ const empty=document.createElement('div'); empty.className='day'; days.appendChild(empty); }
 
       for (let d=1; d<=end.getDate(); d++){
         const day = document.createElement('div'); day.className='day'; day.textContent=d;
-        const dateKey = `${currentExamDate.getFullYear()}-${String(currentExamDate.getMonth()+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+        const dateKey = `${currentDate.getFullYear()}-${String(currentDate.getMonth()+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
         const items = JSON.parse(localStorage.getItem('exams:'+dateKey) || '[]');
         items.forEach(it=>{
           const label = document.createElement('div'); label.className='exam-label'; label.style.backgroundColor = getSubjectColor(it.materia);
@@ -682,8 +730,6 @@
         days.appendChild(day);
       }
     }
-
-    function changeExamMonth(diff){ currentExamDate.setMonth(currentExamDate.getMonth()+diff); renderExamCalendar(); }
 
     function openExamModal(dateKey){
       examDateKey = dateKey; examEditingIndex = null;
@@ -707,7 +753,7 @@
       const item = { materia, tema, obs };
       if (examEditingIndex===null) items.push(item); else items[examEditingIndex]=item;
       localStorage.setItem(key, JSON.stringify(items));
-      closeExamModal(); renderExamCalendar();
+      closeExamModal(); renderExamCalendar(); renderCalendar();
     }
     function deleteExamItem(){
       if (examDateKey===null || examEditingIndex===null) return;
@@ -715,7 +761,7 @@
       let items = JSON.parse(localStorage.getItem(key) || '[]');
       items.splice(examEditingIndex,1);
       localStorage.setItem(key, JSON.stringify(items));
-      closeExamModal(); renderExamCalendar();
+      closeExamModal(); renderExamCalendar(); renderCalendar();
     }
 
     // (Opcional) Ayuda
@@ -791,26 +837,28 @@
       if (!confirm('¿Eliminar esta materia? Los registros existentes no se borrarán.')) return;
       const removed = subjects[i].name;
       subjects.splice(i,1); saveSubjects(); renderSubjectsList(); renderSubjectsSelect();
-      // No borramos datos previos, solo cambiará a gris en etiquetas antiguas
       renderAgenda(); renderExamCalendar(); renderCalendar();
-      // (Opcional) Advertir si en agenda había bloques con esa materia
       const used = dayKeys.some(k => (agendaData[k]||[]).some(it=>it.materia===removed));
       if (used) console.warn('La materia eliminada estaba en la agenda. Los bloques conservarán el nombre pero pueden verse grises.');
     }
 
-    /********** ==== Switch de vistas ==== **********/
+    /********** ==== Switch de vistas + temas ==== **********/
     function showStudy(){
+      setTheme('study');
       document.getElementById('studyView').style.display = 'block';
       document.getElementById('agendaView').style.display = 'none';
       document.getElementById('examsView').style.display = 'none';
+      renderCalendar();
     }
     function showAgenda(){
+      setTheme('agenda');
       document.getElementById('studyView').style.display = 'none';
       document.getElementById('agendaView').style.display = 'block';
       document.getElementById('examsView').style.display = 'none';
       renderAgenda();
     }
     function showExams(){
+      setTheme('exams');
       document.getElementById('studyView').style.display = 'none';
       document.getElementById('agendaView').style.display = 'none';
       document.getElementById('examsView').style.display = 'block';
@@ -829,4 +877,5 @@
   </script>
 </body>
 </html>
+
 
