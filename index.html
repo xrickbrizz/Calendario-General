@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <title>Calendario de Estudio - Personalizable (v4.1)</title>
+  <title>Calendario de Estudio</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <style>
     :root{
@@ -57,7 +57,6 @@
       color: #fff;
       box-shadow: 0 2px 10px rgba(0,0,0,0.5);
     }
-    .version { font-size: 0.8rem; color: #e2e8f0; opacity:.8 }
 
     .container {
       max-width: 1100px;
@@ -188,12 +187,22 @@
       .modal-content{ width:100% }
       #examModal .modal-content{ width:100% }
     }
+
+    /* ====== Footer versión ====== */
+    footer{
+      max-width:1100px;
+      margin: 10px auto 30px;
+      padding: 8px 12px;
+      color:#94a3b8;
+      text-align:right;
+      font-size:.95rem;
+      opacity:.9;
+    }
   </style>
 </head>
 <body class="study-theme">
   <header>
-    📚 Calendario de Estudio - Personalizable
-    <div class="version">v4.1</div>
+    📚 Calendario de Estudio
   </header>
 
   <div class="container">
@@ -229,12 +238,14 @@
         <div id="agendaGrid" class="agenda"></div>
       </div>
 
-      <!-- ===== Vista: Calendario Parciales (sin toolbar propia, usa la general) ===== -->
+      <!-- ===== Vista: Calendario Parciales (sin toolbar propia, usa la general) ====== -->
       <div id="examsView" style="display:none">
         <div class="days" id="examCalendarDays"></div>
       </div>
     </div>
   </div>
+
+  <footer>Versión 7.7</footer>
 
   <!-- ===== Modal Estudio ===== -->
   <div id="modal" class="modal">
@@ -429,6 +440,7 @@
         const dateKey = `${currentDate.getFullYear()}-${String(currentDate.getMonth()+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
         const records = JSON.parse(localStorage.getItem(dateKey) || '[]');
 
+        // === SOLO ESTUDIO en el calendario de estudio ===
         records.forEach(r => {
           const label = document.createElement('div');
           label.className = 'study-label';
@@ -445,21 +457,8 @@
           day.appendChild(label);
         });
 
-        // Etiquetas de parciales en el mismo mes/fecha
-        const examItems = JSON.parse(localStorage.getItem('exams:'+dateKey) || '[]');
-        examItems.forEach(it=>{
-          const label = document.createElement('div');
-          label.className = 'exam-label';
-          label.style.backgroundColor = getSubjectColor(it.materia);
-          label.textContent = it.materia;
-          const tooltip = document.createElement('div');
-          tooltip.className = 'tooltip';
-          tooltip.textContent = `📆 ${dateKey}\n📚 ${it.materia}${it.tema?`\n🧩 ${it.tema}`:''}${it.obs?`\n📝 ${it.obs}`:''}`;
-          label.appendChild(tooltip);
-          label.onmouseenter=()=>tooltip.style.display='block';
-          label.onmouseleave=()=>tooltip.style.display='none';
-          day.appendChild(label);
-        });
+        // ⛔️ IMPORTANTE: NO dibujar parciales en el calendario de estudio.
+        // (Bloque eliminado deliberadamente para mantener vistas separadas)
 
         day.onclick = () => openModal(dateKey);
         days.appendChild(day);
@@ -695,7 +694,7 @@
       closeAgendaModal(); renderAgenda();
     }
 
-    /********** ==== VISTA: PARCIALES (comparten fecha con estudio) ==== **********/
+    /********** ==== VISTA: PARCIALES (separadas de estudio) ==== **********/
     function renderExamSubjects(){
       const sel = document.getElementById('examSubject');
       sel.innerHTML='';
@@ -877,5 +876,4 @@
   </script>
 </body>
 </html>
-
 
