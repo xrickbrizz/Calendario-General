@@ -56,7 +56,26 @@
       font-size: 1.6rem;
       color: #fff;
       box-shadow: 0 2px 10px rgba(0,0,0,0.5);
+      position: relative;
     }
+
+    /* Botón fijo: Plan de estudios (esquina sup. derecha) */
+    .plans-fab{
+      position: fixed;
+      top: 12px;
+      right: 12px;
+      z-index: 60;
+      background: linear-gradient(90deg, var(--accent1), var(--accent2));
+      color:#fff;
+      border:none;
+      border-radius: 999px;
+      padding:.6rem .9rem;
+      box-shadow: 0 6px 22px rgba(37,99,235,.35);
+      cursor:pointer;
+      display:flex; align-items:center; gap:.45rem;
+      font-weight:600;
+    }
+    .plans-fab:hover{ filter:brightness(1.06); transform: translateY(-1px); }
 
     .container {
       max-width: 1100px;
@@ -82,6 +101,7 @@
       flex-wrap: wrap;
     }
     .left, .right { display:flex; gap:.5rem; align-items:center }
+
     .btn {
       background: linear-gradient(90deg, var(--accent1), var(--accent2));
       border: none;
@@ -93,10 +113,23 @@
       transition: transform 0.15s ease, filter .15s ease;
       box-shadow: 0 2px 10px rgba(37,99,235,.35);
       font-size:.95rem;
+      display:flex; align-items:center; gap:.45rem;
+      white-space: nowrap;
     }
     .btn:hover { transform: translateY(-1px); filter: brightness(1.05); }
     .btn.ghost { background:#475569; box-shadow:none }
     #monthYear { font-size: 1.05rem; color: var(--muted) }
+
+    /* Tabs activos: solo la pestaña visible queda gris */
+    .tab-btn { /* azul por defecto */
+      background: linear-gradient(90deg, var(--accent1), var(--accent2));
+      color:#fff;
+    }
+    .tab-btn.active-tab{ /* gris para activa */
+      background: #475569 !important;
+      box-shadow: none !important;
+      color:#f1f5f9 !important;
+    }
 
     /* ====== Calendarios (Estudio y Parciales) ====== */
     .days {
@@ -133,7 +166,6 @@
       cursor: default;
       position: relative;
     }
-    /* Parciales ligeramente más grandes */
     .exam-label{ font-size: .85rem; padding: 3px 8px; box-shadow: 0 2px 10px rgba(0,0,0,.25); }
 
     .tooltip {
@@ -182,10 +214,34 @@
     /* Modal Parciales un poco más grande */
     #examModal .modal-content { width: 420px; }
 
-    @media (max-width: 768px) {
-      .toolbar { flex-direction: column; align-items:flex-start }
-      .modal-content{ width:100% }
-      #examModal .modal-content{ width:100% }
+    /* ====== Modal de ayuda ====== */
+    #helpModal .modal-content { width: 560px; }
+    .help-list ol{ padding-left: 1.2rem; }
+    .help-list h4{ margin:.8rem 0 .3rem; color:#e5e7eb }
+    .help-badge{ display:inline-block; background:#1f2937; color:#e5e7eb; padding:.12rem .5rem; border-radius:999px; font-size:.75rem; margin-left:.4rem }
+
+    /* ====== Modal Planes ====== */
+    #plansModal .modal-content{ width: 680px; }
+    .plans-grid{
+      display:grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap:.6rem;
+    }
+    .plan-item{
+      display:flex; align-items:center; justify-content:space-between;
+      padding:.7rem .9rem; border-radius:10px;
+      background:#0b1220; border:1px solid rgba(148,163,184,.18);
+    }
+    .plan-actions{ display:flex; gap:.4rem; align-items:center }
+    .plan-item a, .plan-item button{
+      border:none; border-radius:8px; padding:.45rem .6rem; cursor:pointer;
+    }
+    .plan-item a{
+      background: linear-gradient(90deg, var(--accent1), var(--accent2));
+      color:#fff; text-decoration:none;
+    }
+    .plan-item button.lock{
+      background:#475569; color:#e5e7eb;
     }
 
     /* ====== Footer versión ====== */
@@ -198,6 +254,27 @@
       font-size:.95rem;
       opacity:.9;
     }
+
+    /* ====== Móvil: solo mejoras, sin tocar escritorio ====== */
+    @media (max-width: 768px) {
+      .toolbar { 
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        gap:.4rem;
+      }
+      .left{ flex: 0 0 auto }
+      .right{ flex: 1 0 auto }
+      .btn{ padding:.55rem .8rem; font-size:.95rem }
+      .modal-content{ width:100%; max-height: 88vh; border-radius: 12px }
+      #examModal .modal-content, #helpModal .modal-content, #plansModal .modal-content{ width:100% }
+      .agenda{ max-height: 68vh }
+      .day, .day-name{ min-height: 92px; font-size:.95rem }
+      /* scroll horizontal para 7 columnas sin apretar celdas */
+      .days{ min-width: 760px }
+      .card{ overflow-x: auto }
+      .plans-grid{ grid-template-columns: 1fr; }
+      .plans-fab{ top: 10px; right: 10px; padding:.55rem .8rem }
+    }
   </style>
 </head>
 <body class="study-theme">
@@ -205,21 +282,29 @@
     📚 Calendario de Estudio
   </header>
 
+  <!-- Botón fijo: Plan de estudios -->
+  <button class="plans-fab" onclick="openPlansModal()" title="Plan de estudios">
+    📚 Plan de estudios
+  </button>
+
   <div class="container">
     <div class="card">
       <div class="toolbar">
         <div class="left">
-          <!-- FIX: botón prev sin carácter extraño -->
-          <button class="btn" onclick="changeMonth(-1)">◀</button>
+          <!-- Navegación de meses -->
+          <button class="btn" onclick="changeMonth(-1)" title="Mes anterior">◀</button>
           <span id="monthYear"></span>
-          <button class="btn" onclick="changeMonth(1)">▶</button>
+          <button class="btn" onclick="changeMonth(1)" title="Mes siguiente">▶</button>
         </div>
         <div class="right">
+          <!-- Botón ayuda -->
+          <button class="btn" id="btnHelp" onclick="openHelpModal()" title="Cómo usar la página">❓ Ayuda</button>
+          <!-- Botones principales -->
           <button class="btn" onclick="openWeeklySummary()">📊 Resumen semanal</button>
           <button class="btn" onclick="openSubjectsModal()">🎨 Materias</button>
-          <button class="btn" onclick="showAgenda()">🗓️ Agenda</button>
-          <button class="btn" onclick="showExams()">📝 Parciales</button>
-          <button class="btn ghost" onclick="showStudy()">📒 Estudio</button>
+          <button class="btn tab-btn" id="btnAgenda" onclick="showAgenda()">🗓️ Agenda</button>
+          <button class="btn tab-btn" id="btnExams" onclick="showExams()">📝 Parciales</button>
+          <button class="btn tab-btn active-tab" id="btnStudy" onclick="showStudy()">📒 Estudio</button>
         </div>
       </div>
 
@@ -238,7 +323,7 @@
         <div id="agendaGrid" class="agenda"></div>
       </div>
 
-      <!-- ===== Vista: Calendario Parciales (sin toolbar propia, usa la general) ====== -->
+      <!-- ===== Vista: Calendario Parciales ====== -->
       <div id="examsView" style="display:none">
         <div class="days" id="examCalendarDays"></div>
       </div>
@@ -345,6 +430,93 @@
     </div>
   </div>
 
+  <!-- ===== Modal Ayuda ===== -->
+  <div id="helpModal" class="modal">
+    <div class="modal-content">
+      <h3>Cómo usar esta página</h3>
+      <div class="help-list" style="color:#e2e8f0; line-height:1.45">
+        <ol>
+          <li>
+            <h4>Crear materias <span class="help-badge">Obligatorio antes de usar</span></h4>
+            Abrí <strong>🎨 Materias</strong>, añadí el <em>nombre</em> y elegí un <em>color</em>. Podés editarlas o borrarlas cuando quieras.
+          </li>
+          <li>
+            <h4>Registrar estudio (📒 Estudio)</h4>
+            Tocá un día del calendario para <em>agregar horas/minutos, tema y materia</em>. Se pueden cargar varias materias por día. Las etiquetas muestran un <em>tooltip</em> con tiempo y tema.
+          </li>
+          <li>
+            <h4>Planificar la semana (🗓️ Agenda)</h4>
+            En la vista <strong>Agenda</strong> añadís <em>clases con horario</em> por día (08:00–23:00). Los bloques se pintan con el color de la materia.
+          </li>
+          <li>
+            <h4>Gestionar parciales (📝 Parciales)</h4>
+            Calendario separado para <em>exámenes</em>. Hacé clic en la fecha para cargar <em>materia, tema y observaciones</em>. No interfiere con el calendario de estudio.
+          </li>
+          <li>
+            <h4>Ver tu progreso (📊 Resumen semanal)</h4>
+            Muestra las <em>horas totales</em> estudiadas por semana acumuladas desde el inicio.
+          </li>
+        </ol>
+      </div>
+      <button class="cancel" onclick="closeHelpModal()">Cerrar</button>
+    </div>
+  </div>
+
+  <!-- ===== Modal Planes de estudio ===== -->
+  <div id="plansModal" class="modal">
+    <div class="modal-content">
+      <h3>Planes de estudio</h3>
+      <div class="plans-grid">
+        <!-- Filas de carreras -->
+        <div class="plan-item">
+          <div>Ingeniería Aeronáutica</div>
+          <div class="plan-actions"><button class="lock" onclick="lockedPlan()">🔒 No disponible</button></div>
+        </div>
+        <div class="plan-item">
+          <div>Ingeniería Ambiental</div>
+          <div class="plan-actions"><button class="lock" onclick="lockedPlan()">🔒 No disponible</button></div>
+        </div>
+        <div class="plan-item">
+          <div>Ingeniería Biomédica</div>
+          <div class="plan-actions"><button class="lock" onclick="lockedPlan()">🔒 No disponible</button></div>
+        </div>
+        <div class="plan-item">
+          <div>Ingeniería Civil</div>
+          <div class="plan-actions"><a href="https://xrickbrizz.github.io/Malla-Ing.-Civil-UNC/" target="_blank" rel="noopener">Abrir</a></div>
+        </div>
+        <div class="plan-item">
+          <div>Ingeniería Electromecánica</div>
+          <div class="plan-actions"><button class="lock" onclick="lockedPlan()">🔒 No disponible</button></div>
+        </div>
+        <div class="plan-item">
+          <div>Ingeniería Electrónica</div>
+          <div class="plan-actions"><button class="lock" onclick="lockedPlan()">🔒 No disponible</button></div>
+        </div>
+        <div class="plan-item">
+          <div>Ingeniería en Agrimensura</div>
+          <div class="plan-actions"><button class="lock" onclick="lockedPlan()">🔒 No disponible</button></div>
+        </div>
+        <div class="plan-item">
+          <div>Ingeniería en Computación</div>
+          <div class="plan-actions"><a href="https://xrickbrizz.github.io/Plan-Ing.Computaci-n/" target="_blank" rel="noopener">Abrir</a></div>
+        </div>
+        <div class="plan-item">
+          <div>Ingeniería Industrial</div>
+          <div class="plan-actions"><button class="lock" onclick="lockedPlan()">🔒 No disponible</button></div>
+        </div>
+        <div class="plan-item">
+          <div>Ingeniería Mecánica</div>
+          <div class="plan-actions"><button class="lock" onclick="lockedPlan()">🔒 No disponible</button></div>
+        </div>
+        <div class="plan-item">
+          <div>Ingeniería Química</div>
+          <div class="plan-actions"><button class="lock" onclick="lockedPlan()">🔒 No disponible</button></div>
+        </div>
+      </div>
+      <button class="cancel" onclick="closePlansModal()">Cerrar</button>
+    </div>
+  </div>
+
   <script>
     /********** Config & Estado global **********/
     const COLOR_PALETTE = [
@@ -387,6 +559,17 @@
       if (theme==='agenda') document.body.classList.add('agenda-theme');
       else if (theme==='exams') document.body.classList.add('exams-theme');
       else document.body.classList.add('study-theme');
+    }
+
+    // Tabs: activar visualmente según vista
+    function updateActiveTab(view){
+      const m = {
+        study: document.getElementById('btnStudy'),
+        agenda: document.getElementById('btnAgenda'),
+        exams: document.getElementById('btnExams')
+      };
+      document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active-tab'));
+      if (view && m[view]) m[view].classList.add('active-tab');
     }
 
     /********** ==== VISTA: ESTUDIO ==== **********/
@@ -440,7 +623,7 @@
         const dateKey = `${currentDate.getFullYear()}-${String(currentDate.getMonth()+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
         const records = JSON.parse(localStorage.getItem(dateKey) || '[]');
 
-        // === SOLO ESTUDIO en el calendario de estudio ===
+        // SOLO ESTUDIO en el calendario de estudio
         records.forEach(r => {
           const label = document.createElement('div');
           label.className = 'study-label';
@@ -457,20 +640,15 @@
           day.appendChild(label);
         });
 
-        // ⛔️ IMPORTANTE: NO dibujar parciales en el calendario de estudio.
-        // (Bloque eliminado deliberadamente para mantener vistas separadas)
-
         day.onclick = () => openModal(dateKey);
         days.appendChild(day);
       }
     }
 
     function changeMonth(diff) {
-      // Avanza o retrocede sin bloquear
       currentDate.setMonth(currentDate.getMonth() + diff);
       renderCalendar();
-      // Mantener sincronizado el calendario de parciales
-      renderExamCalendar();
+      renderExamCalendar(); // sincronizar
     }
 
     function openModal(dateKey) {
@@ -615,7 +793,7 @@
         agendaData[key].forEach((item, i) => {
           const startM = clamp(timeToMinutes(item.inicio), minutesStart, minutesEnd);
           const endM = clamp(timeToMinutes(item.fin), minutesStart, minutesEnd);
-          if (endM <= startM) return; // ignorar inválidos
+          if (endM <= startM) return;
           const top = (startM - minutesStart) * pxPerMin;
           const height = (endM - startM) * pxPerMin;
 
@@ -841,12 +1019,13 @@
       if (used) console.warn('La materia eliminada estaba en la agenda. Los bloques conservarán el nombre pero pueden verse grises.');
     }
 
-    /********** ==== Switch de vistas + temas ==== **********/
+    /********** ==== Vistas + temas + tabs ==== **********/
     function showStudy(){
       setTheme('study');
       document.getElementById('studyView').style.display = 'block';
       document.getElementById('agendaView').style.display = 'none';
       document.getElementById('examsView').style.display = 'none';
+      updateActiveTab('study');
       renderCalendar();
     }
     function showAgenda(){
@@ -854,6 +1033,7 @@
       document.getElementById('studyView').style.display = 'none';
       document.getElementById('agendaView').style.display = 'block';
       document.getElementById('examsView').style.display = 'none';
+      updateActiveTab('agenda');
       renderAgenda();
     }
     function showExams(){
@@ -861,12 +1041,22 @@
       document.getElementById('studyView').style.display = 'none';
       document.getElementById('agendaView').style.display = 'none';
       document.getElementById('examsView').style.display = 'block';
+      updateActiveTab('exams');
       renderExamCalendar();
     }
 
+    /********** ==== Ayuda ==== **********/
+    function openHelpModal(){ document.getElementById('helpModal').style.display='flex'; }
+    function closeHelpModal(){ document.getElementById('helpModal').style.display='none'; }
+
+    /********** ==== Planes ==== **********/
+    function openPlansModal(){ document.getElementById('plansModal').style.display='flex'; }
+    function closePlansModal(){ document.getElementById('plansModal').style.display='none'; }
+    function lockedPlan(){ alert('No disponible en este momento'); }
+
     /********** ==== Inicio ==== **********/
     // Cierre de modales al inicio
-    ['modal','weeklyModal','subjectsModal','agendaModal','examModal'].forEach(id=>{ document.getElementById(id).style.display = 'none'; });
+    ['modal','weeklyModal','subjectsModal','agendaModal','examModal','helpModal','plansModal'].forEach(id=>{ document.getElementById(id).style.display = 'none'; });
 
     // Paleta sincronizada con input color
     document.getElementById('customColor').addEventListener('input', (e) => { selectedSwatchColor = e.target.value; renderSwatches(); });
@@ -876,4 +1066,5 @@
   </script>
 </body>
 </html>
+
 
