@@ -27,6 +27,8 @@
       color: var(--text);
       min-height: 100vh;
       transition: background 300ms ease;
+      -webkit-font-smoothing:antialiased;
+      -moz-osx-font-smoothing:grayscale;
     }
     body.study-theme{
       background:
@@ -136,42 +138,58 @@
     .days {
       display: grid;
       grid-template-columns: repeat(7, 1fr);
+      gap: 8px; /* usar gap en lugar de margin dentro .day */
       background-color: #0b1220;
+      padding: 10px;
     }
+    /* restaurado min-height para escritorio */
     .day, .day-name {
       border: 1px solid var(--border);
       min-height: 110px;
-      padding: 6px;
+      padding: 8px 8px 12px 8px;
       position: relative;
       transition: box-shadow .18s ease, transform .12s ease;
       background-clip: padding-box;
+      border-radius: 8px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
     }
     .day-name {
       background: rgba(15,23,42,0.85);
       text-align: center;
       font-weight: 600;
       letter-spacing:.3px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
     .day {
       background:
         radial-gradient(400px 160px at 80% 0%, rgba(59,130,246,.04), transparent 60%),
         linear-gradient(180deg, rgba(255,255,255,0.012), transparent 30%);
-      border-radius: 8px;
-      margin: 6px;
     }
     .day:hover { outline: 1px solid rgba(148,163,184,0.25); transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0,0,0,.35) }
+
+    /* Etiquetas: limitar tamaño y evitar overflow */
     .study-label,
     .exam-label{
-      display: inline-block;
-      padding: 2px 6px;
+      display: block;
+      padding: 4px 8px;
       border-radius: 6px;
-      margin: 2px 0;
+      margin: 6px 0 0 0;
       color: #fff;
-      font-size: 0.75rem;
+      font-size: 0.85rem;
       cursor: default;
       position: relative;
+      max-height: 3.6rem; /* límite de alto */
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: normal;
+      line-height: 1.05;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.18);
     }
-    .exam-label{ font-size: .85rem; padding: 3px 8px; box-shadow: 0 2px 10px rgba(0,0,0,.25); }
+    .exam-label{ font-size: .9rem; padding: 5px 8px; }
 
     .tooltip {
       position: absolute;
@@ -191,17 +209,27 @@
     /* Estilo para el día actual: oscuro + borde brillante */
     .day.today {
       border: 2px solid var(--today-glow);
-      box-shadow: 0 8px 30px rgba(99,102,241,0.12), 0 0 18px rgba(99,102,241,0.08) inset;
+      box-shadow: 0 8px 30px rgba(99,102,241,0.12), 0 0 18px rgba(99,102,241,0.06) inset;
       transform: translateY(-4px);
+    }
+    .date-number {
+      color: #cbd5e1;
+      font-weight: 600;
+      display: inline-block;
+      padding: 2px 6px;
+      border-radius: 6px;
+      background: transparent;
+      border: 1px solid rgba(255,255,255,0.02);
+      font-size: 0.95rem;
     }
     .day.today .date-number {
       color: #e6eefc;
       font-weight: 700;
       background: linear-gradient(90deg, rgba(255,255,255,0.02), rgba(255,255,255,0.04));
-      padding: 2px 6px;
-      border-radius: 6px;
-      border: 1px solid rgba(255,255,255,0.03);
     }
+
+    /* Mover las etiquetas para que aparezcan después del número (flex) */
+    .cal-number-row { display:flex; align-items:center; gap:.4rem; margin-bottom:6px; }
 
     /* ====== Agenda semanal (grilla) ====== */
     .agenda-wrap{ display:none; }
@@ -223,16 +251,13 @@
 
     /* ====== Modales base ====== */
     .modal { position: fixed; inset: 0; background-color: rgba(0,0,0,0.6); display: none; align-items: center; justify-content: center; z-index: 40; padding: 1rem; }
-    .modal-content { background-color: #0f172a; padding: 1rem; border-radius: 14px; width: 380px; max-height: 92vh; overflow-y: auto; box-shadow: var(--shadow); border: 1px solid rgba(148,163,184,0.18); }
+    .modal-content { background-color: #0f172a; padding: 1rem; border-radius: 14px; width: 420px; max-height: 92vh; overflow-y: auto; box-shadow: var(--shadow); border: 1px solid rgba(148,163,184,0.18); }
     .modal-content h3 { margin: .25rem 0 1rem }
     .modal-content label { display: block; margin-bottom: 0.35rem; font-size:.95rem; color:#e2e8f0; }
     .modal-content input, .modal-content textarea, .modal-content select { width: 100%; margin-bottom: 1rem; padding: 0.6rem .7rem; border-radius: 8px; border: 1px solid rgba(148,163,184,0.18); background-color: #0b1220; color: white; outline: none; }
     .modal-content textarea{ resize: vertical }
     .modal-content button { background: linear-gradient(90deg, var(--accent1), var(--accent2)); border: none; padding: 0.6rem .8rem; color: white; cursor: pointer; border-radius: 10px; width: 100%; font-size: 1rem; margin-bottom: 0.6rem; box-shadow: 0 2px 12px rgba(37,99,235,.35); }
     .modal-content button.cancel { background: #475569; box-shadow:none }
-
-    /* Modal Parciales un poco más grande */
-    #examModal .modal-content { width: 420px; }
 
     /* ====== Modal de ayuda ====== */
     #helpModal .modal-content { width: 560px; }
@@ -275,25 +300,29 @@
       opacity:.9;
     }
 
-    /* ====== Móvil: solo mejoras, sin tocar escritorio ====== */
+    /* ====== Móvil: mejoras sin tocar escritorio visualmente ====== */
     @media (max-width: 768px) {
-      .toolbar { 
+      .toolbar {
         flex-wrap: nowrap;
         overflow-x: auto;
         gap:.4rem;
       }
       .left{ flex: 0 0 auto }
       .right{ flex: 1 0 auto }
-      .btn{ padding:.55rem .8rem; font-size:.95rem }
+      .btn{ padding:.48rem .7rem; font-size:.92rem }
       .modal-content{ width:100%; max-height: 88vh; border-radius: 12px }
       #examModal .modal-content, #helpModal .modal-content, #plansModal .modal-content{ width:100% }
       .agenda{ max-height: 68vh }
       .day, .day-name{ min-height: 92px; font-size:.95rem }
-      /* scroll horizontal para 7 columnas sin apretar celdas */
-      .days{ min-width: 760px }
+      /* permitir scroll horizontal para mantener proporción de celdas */
+      .days{ min-width: 760px; padding: 8px }
       .card{ overflow-x: auto }
       .plans-grid{ grid-template-columns: 1fr; }
       .plans-fab{ top: 10px; right: 10px; padding:.55rem .8rem }
+      /* etiquetas más compactas en móvil */
+      .study-label, .exam-label { font-size:0.78rem; max-height:3.2rem; padding:3px 6px; margin-top:4px }
+      .date-number { font-size:0.9rem; padding:2px 6px }
+      .day.today { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(99,102,241,0.10) }
     }
   </style>
 </head>
@@ -634,6 +663,7 @@
       for (let i = 0; i < offset; i++) {
         const empty = document.createElement('div');
         empty.className = 'day';
+        // mantener caja vacía (sin número)
         days.appendChild(empty);
       }
 
@@ -647,15 +677,14 @@
         const day = document.createElement('div');
         day.className = 'day';
 
-        // Caja interna para poder formatear número separado
+        // fila con número
+        const numRow = document.createElement('div');
+        numRow.className = 'cal-number-row';
         const num = document.createElement('div');
         num.className = 'date-number';
-        num.style.position = 'absolute';
-        num.style.top = '8px';
-        num.style.left = '8px';
-        num.style.fontSize = '0.95rem';
         num.textContent = d;
-        day.appendChild(num);
+        numRow.appendChild(num);
+        day.appendChild(numRow);
 
         // Marcar si es hoy (solo si coincide con mes/año actual en vista)
         if (todayY === currentDate.getFullYear() && todayM === currentDate.getMonth() && todayD === d) {
@@ -680,9 +709,6 @@
           label.onmouseenter = () => tooltip.style.display = 'block';
           label.onmouseleave = () => tooltip.style.display = 'none';
 
-          // posicionarlo debajo del número
-          label.style.display = 'block';
-          label.style.marginTop = '26px';
           day.appendChild(label);
         });
 
@@ -918,13 +944,33 @@
       const offset = (start.getDay() + 6) % 7;
       for (let i=0;i<offset;i++){ const empty=document.createElement('div'); empty.className='day'; days.appendChild(empty); }
 
+      // calcular 'today' local para resaltar en parciales también
+      const now = new Date();
+      const todayY = now.getFullYear();
+      const todayM = now.getMonth();
+      const todayD = now.getDate();
+
       for (let d=1; d<=end.getDate(); d++){
-        const day = document.createElement('div'); day.className='day'; day.textContent=d;
+        const day = document.createElement('div'); day.className='day';
+        const numRow = document.createElement('div');
+        numRow.className = 'cal-number-row';
+        const num = document.createElement('div'); num.className='date-number'; num.textContent = d;
+        numRow.appendChild(num);
+        day.appendChild(numRow);
+
+        if (todayY === currentDate.getFullYear() && todayM === currentDate.getMonth() && todayD === d) {
+          day.classList.add('today');
+        }
+
         const dateKey = `${currentDate.getFullYear()}-${String(currentDate.getMonth()+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
         const items = JSON.parse(localStorage.getItem('exams:'+dateKey) || '[]');
         items.forEach(it=>{
           const label = document.createElement('div'); label.className='exam-label'; label.style.backgroundColor = getSubjectColor(it.materia);
           label.textContent = it.materia;
+          label.style.display = 'block';
+          label.style.marginTop = '6px';
+          label.style.maxHeight = '3.6rem';
+          label.style.overflow = 'hidden';
           const tooltip = document.createElement('div'); tooltip.className='tooltip';
           tooltip.textContent = `📆 ${dateKey}\n📚 ${it.materia}${it.tema?`\n🧩 ${it.tema}`:''}${it.obs?`\n📝 ${it.obs}`:''}`;
           label.appendChild(tooltip); label.onmouseenter=()=>tooltip.style.display='block'; label.onmouseleave=()=>tooltip.style.display='none';
@@ -1091,18 +1137,6 @@
     document.getElementById('btnAgenda').addEventListener('click', ()=>{ updateActiveTab('agenda'); });
     document.getElementById('btnExams').addEventListener('click', ()=>{ updateActiveTab('exams'); });
 
-    // Planes: clickable items (redirecciones)
-    // Los enlaces ya están en el HTML como <a>, pero para seguridad, ligar locks:
-    document.querySelectorAll('#plansModal .plan-item').forEach(item=>{
-      const text = item.textContent || '';
-      if(text.includes('Ingeniería Civil')){
-        // enlace disponible (ya en HTML)
-      }
-      if(text.includes('Ingeniería en Computación')){
-        // enlace disponible (ya en HTML)
-      }
-    });
-
     // Render inicial
     renderSubjectsSelect(); renderCalendar(); renderAgenda(); renderExamCalendar();
 
@@ -1112,5 +1146,4 @@
   </script>
 </body>
 </html>
-
 
